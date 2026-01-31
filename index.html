@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>AI Cyber Mind</title>
+    <style>
+        body { background: #05070a; color: #00f2ff; font-family: 'Courier New', monospace; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .terminal { width: 90%; max-width: 700px; height: 80vh; border: 1px solid #00f2ff; display: flex; flex-direction: column; background: rgba(0,0,0,0.9); box-shadow: 0 0 30px rgba(0, 242, 255, 0.2); }
+        #output { flex: 1; overflow-y: auto; padding: 20px; white-space: pre-wrap; }
+        .input-line { display: flex; border-top: 1px solid #00f2ff; padding: 10px; background: #000; }
+        input { flex: 1; background: none; border: none; color: #fff; outline: none; font-family: inherit; font-size: 16px; }
+        button { background: #00f2ff; border: none; color: #000; padding: 10px 20px; cursor: pointer; font-weight: bold; }
+        .user { color: #7000ff; }
+        .ai { color: #00f2ff; }
+    </style>
+</head>
+<body>
+<div class="terminal">
+    <div id="output">*** СИСТЕМА ГОТОВА К ЗАПУСКУ НА HOSTING ***</div>
+    <div class="input-line">
+        <input type="text" id="userInput" placeholder="Введите команду..." autocomplete="off">
+        <button id="sendBtn">ПУСК</button>
+    </div>
+</div>
+
+<script>
+    const API_KEY = "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";
+    const MODEL = "mistralai/Mistral-7B-Instruct-v0.2";
+
+    async function send() {
+        const input = document.getElementById('userInput');
+        const out = document.getElementById('output');
+        const text = input.value.trim();
+        if(!text) return;
+
+        out.innerHTML += `<div class="user">\n> ${text}</div>`;
+        input.value = '';
+        
+        try {
+            const res = await fetch(`https://api-inference.huggingface.co/models/${MODEL}`, {
+                method: "POST",
+                headers: { "Authorization": `Bearer ${API_KEY}`, "Content-Type": "application/json" },
+                body: JSON.stringify({ inputs: text })
+            });
+            const data = await res.json();
+            const reply = Array.isArray(data) ? data[0].generated_text : data.generated_text;
+            out.innerHTML += `<div class="ai">> ${reply.replace(text, '').trim()}</div>`;
+        } catch (e) {
+            out.innerHTML += `<div style="color:red">> ОШИБКА: ${e.message}</div>`;
+        }
+        out.scrollTop = out.scrollHeight;
+    }
+
+    document.getElementById('sendBtn').onclick = send;
+    document.getElementById('userInput').onkeydown = (e) => { if(e.key === 'Enter') send(); };
+</script>
+</body>
+</html>
