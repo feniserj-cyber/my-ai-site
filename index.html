@@ -1,54 +1,66 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>AI Terminal</title>
-    <style>
-        body { background: #000; color: #0f0; font-family: monospace; padding: 20px; }
-        #chat { border: 1px solid #0f0; height: 350px; overflow-y: auto; padding: 15px; background: #050505; margin-bottom: 10px; }
-        .ai { color: #fff; border-left: 2px solid #0f0; padding-left: 10px; margin: 10px 0; background: #111; padding: 5px; }
-    </style>
-</head>
-<body>
-    <div id="chat">*** ПОДКЛЮЧЕНО ***</div>
-    <input type="text" id="inp" style="width:70%; background:#000; color:#0f0; border:1px solid #0f0; padding:10px;">
-    <button id="btn" onclick="send()">ПУСК</button>
-
 <script>
+    // Твоя ссылка (проверь, чтобы она была в кавычках)
     const googleUrl = "https://script.google.com/macros/s/AKfycbygPlOK2H0gFgLJewnCYKcDtwhClnmH5tJsauH1VrUl5qwCEBgCwlq41LULy0rGKBMzkg/exec";
 
-    // Эта функция сработает, когда Google пришлет ответ
+    // 1. ЛОВУШКА ДЛЯ ОТВЕТА (вызывается самим Google)
     window.handleResponse = function(data) {
+        console.log("Данные получены:", data);
         const chat = document.getElementById('chat');
-        let resText = Array.isArray(data) ? data[0].generated_text : (data.generated_text || "Ошибка");
+        const btn = document.getElementById('btn');
         
-        // Убираем эхо вопроса
-        const lastQuery = sessionStorage.getItem('lastQuery') || "";
-        const cleanText = resText.replace(lastQuery, "").trim();
+        try {
+            let resText = Array.isArray(data) ? data[0].generated_text : (data.generated_text || "Пустой ответ");
+            const lastQuery = sessionStorage.getItem('lastQuery') || "";
+            
+            chat.innerHTML += `<div class="ai">${resText.replace(lastQuery, "").trim()}</div>`;
+        } catch (e) {
+            chat.innerHTML += `<div style="color:orange">! Ошибка обработки данных: ${e.message}</div>`;
+        }
 
-        chat.innerHTML += `<div class="ai">${cleanText}</div>`;
-        document.getElementById('btn').disabled = false;
+        btn.disabled = false;
+        btn.innerText = "ПУСК";
         chat.scrollTop = chat.scrollHeight;
         
-        // Удаляем временный элемент
+        // Удаляем "отработавший" скрипт
         const oldScript = document.getElementById('api-call');
         if(oldScript) oldScript.remove();
     };
 
-    function send() {
-        const val = document.getElementById('inp').value.trim();
+    async function send() {
+        const inp = document.getElementById('inp');
+        const chat = document.getElementById('chat');
+        const btn = document.getElementById('btn');
+        const val = inp.value.trim();
+
         if(!val) return;
         
         sessionStorage.setItem('lastQuery', val);
-        document.getElementById('chat').innerHTML += `<div>> ${val}</div>`;
-        document.getElementById('btn').disabled = true;
+        chat.innerHTML += `<div>> ${val}</div>`;
+        btn.disabled = true;
+        btn.innerText = "СВЯЗЬ...";
 
-        // Создаем "невидимый" скрипт-запрос
+        // 2. ЛОВУШКА ДЛЯ ЗАПРОСА (JSONP)
         const script = document.createElement('script');
         script.id = 'api-call';
-        script.src = `${googleUrl}?inputs=${encodeURIComponent(val)}&callback=handleResponse`;
+        // Добавляем callback и метку времени, чтобы Google не присылал старый ответ
+        script.src = `${googleUrl}?inputs=${encodeURIComponent(val)}&callback=handleResponse&_ts=${Date.now()}`;
+        
+        // Если скрипт вообще не смог загрузиться (ошибка 404 или блокировка)
+        script.onerror = function() {
+            chat.innerHTML += `<div style="color:red">!!! КРИТИЧЕСКАЯ ОШИБКА: Google-шлюз недоступен. Проверьте настройки Deploy (Anyone).</div>`;
+            btn.disabled = false;
+            btn.innerText = "ПУСК";
+        };
+
         document.body.appendChild(script);
+        
+        // Таймер ожидания (если Google молчит дольше 15 секунд)
+        setTimeout(() => {
+            if (btn.disabled) {
+                chat.innerHTML += `<div style="color:yellow">? Ожидание затянулось. Попробуйте еще раз через минуту.</div>`;
+                btn.disabled = false;
+                btn.innerText = "ПУСК";
+            }
+        }, 15000);
     }
 </script>
-</body>
-</html>
