@@ -2,75 +2,84 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>AI Cyber Terminal | Success</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Cyber Mind</title>
     <style>
-        body { background: #050505; color: #00ff41; font-family: 'Courier New', monospace; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .box { width: 90%; max-width: 600px; height: 75vh; border: 2px solid #00ff41; background: #000; display: flex; flex-direction: column; padding: 15px; box-shadow: 0 0 20px #00ff41; border-radius: 10px; }
-        #chat { flex: 1; overflow-y: auto; padding: 10px; border-bottom: 1px solid #00ff41; margin-bottom: 10px; font-size: 14px; white-space: pre-wrap; }
-        .in-row { display: flex; gap: 10px; }
-        input { flex: 1; background: #000; border: 1px solid #00ff41; color: #00ff41; padding: 12px; outline: none; }
-        button { background: #00ff41; border: none; color: #000; font-weight: bold; padding: 10px 25px; cursor: pointer; }
-        button:disabled { background: #333; color: #666; cursor: not-allowed; }
-        .ai-text { color: #fff; background: #111; padding: 10px; margin: 5px 0; border-radius: 4px; border-left: 3px solid #00ff41; }
-        .user-text { color: #888; margin-top: 10px; }
+        body { background: #050505; color: #00ff41; font-family: 'Courier New', monospace; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; overflow: hidden; }
+        .terminal { width: 95%; max-width: 650px; height: 80vh; border: 2px solid #00ff41; background: #000; display: flex; flex-direction: column; padding: 15px; box-shadow: 0 0 20px rgba(0, 255, 65, 0.2); border-radius: 8px; }
+        #chat { flex: 1; overflow-y: auto; padding: 10px; border-bottom: 1px solid #00ff41; margin-bottom: 15px; font-size: 15px; line-height: 1.4; }
+        .input-area { display: flex; gap: 10px; }
+        input { flex: 1; background: #000; border: 1px solid #00ff41; color: #00ff41; padding: 12px; outline: none; font-family: inherit; }
+        button { background: #00ff41; border: none; color: #000; font-weight: bold; padding: 10px 25px; cursor: pointer; text-transform: uppercase; transition: 0.2s; }
+        button:hover { background: #fff; box-shadow: 0 0 10px #fff; }
+        button:disabled { background: #222; color: #444; cursor: wait; }
+        .user-msg { color: #888; margin-top: 10px; }
+        .ai-msg { color: #fff; background: rgba(0, 255, 65, 0.1); padding: 10px; margin: 5px 0; border-radius: 4px; border-left: 4px solid #00ff41; }
     </style>
 </head>
 <body>
-<div class="box">
-    <div id="chat">*** КАНАЛ СВЯЗИ ЧЕРЕЗ GOOGLE УСТАНОВЛЕН. СИСТЕМА ГОТОВА. ***</div>
-    <div class="in-row">
-        <input type="text" id="msg" placeholder="Введите ваш вопрос..." autocomplete="off">
-        <button id="go">ПУСК</button>
+
+<div class="terminal">
+    <div id="chat">*** СИСТЕМА АКТИВИРОВАНА. СВЯЗЬ ЧЕРЕЗ GOOGLE-ШЛЮЗ УСТАНОВЛЕНА. ***</div>
+    <div class="input-area">
+        <input type="text" id="userInput" placeholder="Введите команду..." autocomplete="off">
+        <button id="sendBtn">ПУСК</button>
     </div>
 </div>
 
 <script>
-    const btn = document.getElementById('go');
     const chat = document.getElementById('chat');
-    const input = document.getElementById('msg');
+    const input = document.getElementById('userInput');
+    const btn = document.getElementById('sendBtn');
 
-    // Твоя проверенная ссылка
-    const googleUrl = "https://script.google.com/macros/s/AKfycbzTX2v9WXSknHYB4kyr-w9giHs7TCbO7rwp_TBOVUBVsutbk_FHjaZjg3XvnDVIh-zjDg/exec";
+    // Твоя новая ссылка (уже здесь!)
+    const googleUrl = "https://script.google.com/macros/s/AKfycbwnjPwBRTOCX-sZ08RWkcD_bePsJ07k5yWxZwss6XjO2aOx0Kl_b9eqQNnIF8H0eIIQPA/exec";
 
-    async function sendMessage() {
-        const val = input.value.trim();
-        if(!val) return;
-        
-        chat.innerHTML += `<div class="user-text">> ${val}</div>`;
+    async function sendToAI() {
+        const text = input.value.trim();
+        if (!text) return;
+
+        // Показываем сообщение пользователя
+        chat.innerHTML += `<div class="user-msg">> ${text}</div>`;
         input.value = "";
         btn.disabled = true;
-        btn.innerText = "ЖДИТЕ...";
+        btn.innerText = "СВЯЗЬ...";
         chat.scrollTop = chat.scrollHeight;
 
         try {
             const response = await fetch(googleUrl, {
                 method: 'POST',
-                body: JSON.stringify({ inputs: val })
+                body: JSON.stringify({ inputs: text })
             });
 
             const data = await response.json();
             
-            let aiMsg = "";
-            if (Array.isArray(data)) {
-                aiMsg = data[0].generated_text || "Пустой ответ";
+            // Получаем чистый текст ответа
+            let reply = "";
+            if (Array.isArray(data) && data[0].generated_text) {
+                reply = data[0].generated_text;
             } else if (data.generated_text) {
-                aiMsg = data.generated_text;
+                reply = data.generated_text;
             } else {
-                aiMsg = "Ошибка формата данных: " + JSON.stringify(data);
+                reply = "Ошибка: " + JSON.stringify(data);
             }
 
-            chat.innerHTML += `<div class="ai-text">${aiMsg}</div>`;
-        } catch (e) {
-            chat.innerHTML += `<div style="color:red">ОШИБКА: Не удалось получить ответ. Проверьте настройки доступа 'Anyone' в Google Script.</div>`;
+            // Убираем из ответа повтор нашего вопроса (особенность Mistral)
+            const cleanReply = reply.replace(text, "").trim();
+
+            chat.innerHTML += `<div class="ai-msg">${cleanReply || "ИИ задумался, попробуйте еще раз."}</div>`;
+        } catch (error) {
+            chat.innerHTML += `<div style="color:red">ОШИБКА ШЛЮЗА: Попробуйте обновить страницу.</div>`;
         }
-        
+
         btn.disabled = false;
         btn.innerText = "ПУСК";
         chat.scrollTop = chat.scrollHeight;
     }
 
-    btn.onclick = sendMessage;
-    input.onkeydown = (e) => { if(e.key === 'Enter') sendMessage(); };
+    btn.onclick = sendToAI;
+    input.onkeydown = (e) => { if (e.key === 'Enter') sendToAI(); };
 </script>
+
 </body>
 </html>
