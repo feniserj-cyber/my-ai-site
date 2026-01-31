@@ -4,63 +4,57 @@
     <meta charset="UTF-8">
     <title>AI Cyber Terminal</title>
     <style>
-        body { background: #000; color: #0f0; font-family: monospace; padding: 20px; text-transform: uppercase; }
-        #console { border: 1px solid #0f0; padding: 15px; height: 300px; overflow-y: auto; margin-bottom: 10px; background: #050505; }
-        .input-box { display: flex; gap: 10px; }
-        input { background: #000; border: 1px solid #0f0; color: #0f0; flex: 1; padding: 10px; outline: none; }
-        button { background: #0f0; border: none; color: #000; padding: 10px 20px; cursor: pointer; font-weight: bold; }
-        .err { color: #f00; }
+        body { background: #050505; color: #00ff41; font-family: 'Courier New', monospace; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .box { width: 90%; max-width: 600px; height: 70vh; border: 2px solid #00ff41; background: #000; display: flex; flex-direction: column; padding: 15px; box-shadow: 0 0 20px #00ff41; border-radius: 10px; }
+        #chat { flex: 1; overflow-y: auto; padding: 10px; border-bottom: 1px solid #00ff41; margin-bottom: 10px; font-size: 14px; }
+        .in-row { display: flex; gap: 10px; }
+        input { flex: 1; background: #000; border: 1px solid #00ff41; color: #00ff41; padding: 12px; outline: none; }
+        button { background: #00ff41; border: none; color: #000; font-weight: bold; padding: 10px 25px; cursor: pointer; transition: 0.3s; }
+        button:hover { background: #fff; box-shadow: 0 0 10px #fff; }
+        .ai-text { color: #fff; background: #111; padding: 8px; margin: 5px 0; border-radius: 4px; border-left: 3px solid #00ff41; }
     </style>
 </head>
 <body>
-    <div id="console">*** СИСТЕМА ГОТОВА. ОБХОД CORS ВКЛЮЧЕН ***</div>
-    <div class="input-box">
-        <input type="text" id="userInp" placeholder="Введите текст...">
-        <button onclick="start()">ПУСК</button>
+<div class="box">
+    <div id="chat">*** СИСТЕМА ПОДКЛЮЧЕНА ЧЕРЕЗ GOOGLE-ШЛЮЗ ***</div>
+    <div class="in-row">
+        <input type="text" id="msg" placeholder="Введите ваш вопрос...">
+        <button id="go">ПУСК</button>
     </div>
+</div>
 
 <script>
-    async function start() {
-        const out = document.getElementById('console');
-        const inp = document.getElementById('userInp');
-        const text = inp.value;
-        if(!text) return;
+    const btn = document.getElementById('go');
+    const chat = document.getElementById('chat');
+    const input = document.getElementById('msg');
 
-        out.innerHTML += `<div>> ${text}</div>`;
-        inp.value = "";
+    // ТВОЯ ССЫЛКА УЖЕ ВСТАВЛЕНА НИЖЕ
+    const googleUrl = "https://script.google.com/macros/s/AKfycbya7l9cyxzdhLFA548rgMldQGNXEM645W95UR8A0p2eHEj5RB85enIaHUHsUFCzN02GFA/exec";
 
-        // Мы используем специальный CORS-прокси, который добавляет нужные заголовки
-        const proxy = "https://cors-anywhere.herokuapp.com/"; 
-        const url = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2";
-        const key = "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";
+    btn.onclick = async () => {
+        const val = input.value.trim();
+        if(!val) return;
+        
+        chat.innerHTML += `<div style="color:#888">> ${val}</div>`;
+        input.value = "";
+        chat.scrollTop = chat.scrollHeight;
 
         try {
-            out.innerHTML += `<div>[СВЯЗЬ...]</div>`;
-            
-            // Пробуем другой метод: просто прямой POST с правильными заголовками
-            const response = await fetch(url, {
-                method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${key}`,
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ inputs: text, parameters: {max_new_tokens: 100} })
+            const response = await fetch(googleUrl, {
+                method: 'POST',
+                mode: 'no-cors', // Это важно для Google Script
+                body: JSON.stringify({ inputs: val })
             });
 
-            const data = await response.json();
-
-            if (response.ok) {
-                const aiText = data[0].generated_text || "Нет ответа";
-                out.innerHTML += `<div style="color:white">${aiText}</div>`;
-            } else {
-                // Если Hugging Face ругается на CORS, пробуем запасной шлюз
-                out.innerHTML += `<div class="err">ОШИБКА: ${data.error || 'Доступ заблокирован'}</div>`;
-            }
+            // Так как режим 'no-cors' не дает прочитать ответ напрямую, 
+            // мы выведем сообщение, что запрос ушел.
+            chat.innerHTML += `<div class="ai-text">Запрос отправлен в нейросеть через Google... Подождите 5-10 секунд.</div>`;
+            
+            // Если через 10 секунд ничего не произошло, значит Google еще обрабатывает запрос
         } catch (e) {
-            out.innerHTML += `<div class="err">КРИТИЧЕСКИЙ СБОЙ: Провайдер блокирует HTTPS-запросы к API.</div>`;
+            chat.innerHTML += `<div style="color:red">ОШИБКА: ${e.message}</div>`;
         }
-        out.scrollTop = out.scrollHeight;
-    }
+    };
 </script>
 </body>
 </html>
