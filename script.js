@@ -1,4 +1,4 @@
-const googleUrl = "ВСТАВЬ_СВОЮ_ССЫЛКУ_ЗДЕСЬ";
+const googleUrl = "https://script.google.com/macros/s/AKfycbxmfcDfdAGZ0pIp8eU_WpF8u4NYdU32muzt6_iesGF1OuRyJ6uzd2-53zp5kcuBPIE-Pw/exec";
 
 window.handleResponse = function(data) {
     const chat = document.getElementById('chat');
@@ -41,4 +41,5 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('inp').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') send();
     });
+
 });
