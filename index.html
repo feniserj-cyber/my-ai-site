@@ -1,71 +1,49 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html>
 <head>
     <meta charset="UTF-8">
-    <title>AI Cyber Terminal</title>
+    <title>AI Final Boss</title>
     <style>
-        body { background: #000; color: #0f0; font-family: 'Courier New', monospace; padding: 20px; display: flex; justify-content: center; }
-        .terminal { width: 100%; max-width: 600px; border: 1px solid #0f0; padding: 15px; background: #050505; box-shadow: 0 0 10px #0f0; }
-        #chat { height: 400px; overflow-y: auto; margin-bottom: 15px; font-size: 14px; border-bottom: 1px solid #0f0; }
-        .input-box { display: flex; gap: 10px; }
-        input { flex: 1; background: #000; border: 1px solid #0f0; color: #0f0; padding: 10px; outline: none; }
-        button { background: #0f0; border: none; color: #000; font-weight: bold; padding: 10px 20px; cursor: pointer; }
-        button:disabled { background: #050; }
-        .ai-msg { color: #fff; margin: 10px 0; padding: 10px; background: #111; border-left: 3px solid #0f0; }
+        body { background: #000; color: #0f0; font-family: monospace; padding: 20px; text-align: center; }
+        #chat { border: 1px solid #0f0; height: 300px; overflow-y: auto; text-align: left; padding: 10px; margin-bottom: 10px; }
+        input { background: #000; border: 1px solid #0f0; color: #0f0; padding: 10px; width: 60%; }
+        button { background: #0f0; border: none; padding: 10px 20px; cursor: pointer; font-weight: bold; }
+        .ai { color: #fff; margin: 10px 0; border-left: 2px solid #0f0; padding-left: 5px; }
     </style>
 </head>
 <body>
-    <div class="terminal">
-        <div id="chat">*** СИСТЕМА ПОДКЛЮЧЕНА. ОЖИДАНИЕ ВВОДА... ***</div>
-        <div class="input-box">
-            <input type="text" id="userInput" placeholder="Напишите сообщение..." autocomplete="off">
-            <button id="sendBtn">ПУСК</button>
-        </div>
-    </div>
+    <div id="chat">*** ПОДКЛЮЧЕНИЕ ЧЕРЕЗ JSONP-ТОННЕЛЬ ***</div>
+    <input type="text" id="inp" placeholder="Напиши что-нибудь...">
+    <button id="btn" onclick="send()">ПУСК</button>
 
     <script>
-        const chat = document.getElementById('chat');
-        const input = document.getElementById('userInput');
-        const btn = document.getElementById('sendBtn');
+        // ВСТАВЬ СЮДА СВОЮ НОВУЮ ССЫЛКУ ИЗ ШАГА 1
+        const googleUrl = "ТВОЯ_НОВАЯ_ССЫЛКА_ТУТ";
 
-        // ТВОЯ НОВАЯ ССЫЛКА
-        const googleUrl = "https://script.google.com/macros/s/AKfycbwtV-IQh04U2GulQrflAWv6b-fLGQkD_SaI_ZkOKqMY5MrOITRkK3qY-vpMsZj4ziUfeA/exec";
-
-        async function send() {
-            const val = input.value.trim();
+        function send() {
+            const val = document.getElementById('inp').value;
             if(!val) return;
+            document.getElementById('chat').innerHTML += `<div>> ${val}</div>`;
+            document.getElementById('btn').disabled = true;
 
-            chat.innerHTML += `<div style="color:#888">> ${val}</div>`;
-            input.value = "";
-            btn.disabled = true;
-            btn.innerText = "...";
-            chat.scrollTop = chat.scrollHeight;
-
-            try {
-                // Используем GET запрос, так как он проще всего проходит через блокировки
-                const finalUrl = `${googleUrl}?inputs=${encodeURIComponent(val)}`;
-                
-                const response = await fetch(finalUrl);
-                const data = await response.json();
-                
-                let reply = Array.isArray(data) ? data[0].generated_text : (data.generated_text || "Ошибка данных");
-                
-                // Очищаем ответ от повтора вопроса
-                const cleanReply = reply.replace(val, "").trim();
-                chat.innerHTML += `<div class="ai-msg">${cleanReply || "ИИ не смог подобрать слов..."}</div>`;
-
-            } catch (e) {
-                chat.innerHTML += `<div style="color:red">СБОЙ СВЯЗИ. Попробуйте нажать ПУСК еще раз.</div>`;
-                console.error(e);
-            }
-
-            btn.disabled = false;
-            btn.innerText = "ПУСК";
-            chat.scrollTop = chat.scrollHeight;
+            // Создаем "летающий" скрипт для обхода блокировок
+            const script = document.createElement('script');
+            script.src = `${googleUrl}?inputs=${encodeURIComponent(val)}&callback=handleResponse`;
+            document.body.appendChild(script);
+            // Удаляем его после загрузки
+            script.onload = () => script.remove();
         }
 
-        btn.onclick = send;
-        input.onkeydown = (e) => { if(e.key === 'Enter') send(); };
+        // Эта функция получит ответ от Google
+        function handleResponse(data) {
+            const chat = document.getElementById('chat');
+            const btn = document.getElementById('btn');
+            let text = Array.isArray(data) ? data[0].generated_text : (data.generated_text || "Ошибка");
+            
+            chat.innerHTML += `<div class="ai">${text}</div>`;
+            chat.scrollTop = chat.scrollHeight;
+            btn.disabled = false;
+        }
     </script>
 </body>
 </html>
