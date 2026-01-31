@@ -1,90 +1,77 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <title>AI Cyber Terminal</title>
-    <style>
-        body { background: #000; color: #0f0; font-family: 'Courier New', monospace; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-        #chat { width: 100%; max-width: 600px; height: 400px; border: 1px solid #0f0; background: #050505; overflow-y: auto; padding: 15px; margin-bottom: 15px; box-shadow: 0 0 10px #0f0; }
-        .input-row { width: 100%; max-width: 630px; display: flex; gap: 10px; }
-        input { flex: 1; background: #000; border: 1px solid #0f0; color: #0f0; padding: 12px; outline: none; }
-        button { background: #0f0; border: none; color: #000; padding: 10px 25px; font-weight: bold; cursor: pointer; }
-        button:disabled { background: #050; color: #0a0; }
-        .ai-msg { color: #fff; border-left: 3px solid #0f0; padding-left: 10px; margin: 10px 0; background: #111; }
-    </style>
-</head>
-<body>
+<script>
+    // 1. Твоя ссылка, которую ты получил в Google Apps Script после "Deploy"
+    const googleUrl = "https://script.google.com/macros/s/AKfycbyX8xb68npYAfoDo6aK25lSCo2r6fB_oaGQyCaVJGfrmyVBkh-ko923P02TwYPPONFyzg/exec";
 
-    <div id="chat">*** СИСТЕМА ГОТОВА. ВВЕДИТЕ ЗАПРОС... ***</div>
-    
-    <div class="input-row">
-        <input type="text" id="inp" placeholder="Напишите сообщение..." autocomplete="off">
-        <button id="btn" onclick="send()">ПУСК</button>
-    </div>
+    // 2. ВОТ ТВОЯ НОВАЯ ФУНКЦИЯ (ОБРАБОТЧИК ОТВЕТА)
+    window.handleResponse = function(data) {
+        const chat = document.getElementById('chat');
+        const btn = document.getElementById('btn');
+        
+        console.log("Данные от ИИ:", data); // Чтобы видеть ответ в консоли (F12)
 
-    <script>
-        // ТВОЯ НОВАЯ РАБОЧАЯ ССЫЛКА
-        const googleUrl = "https://script.google.com/macros/s/AKfycbyX8xb68npYAfoDo6aK25lSCo2r6fB_oaGQyCaVJGfrmyVBkh-ko923P02TwYPPONFyzg/exec";
-
-        // Функция, которую вызовет Google, когда пришлет ответ
-        window.handleResponse = function(data) {
-            const chat = document.getElementById('chat');
-            const btn = document.getElementById('btn');
-            
-            try {
-                // Извлекаем текст ответа
-                let resText = Array.isArray(data) ? data[0].generated_text : (data.generated_text || "Нет ответа от ИИ");
-                
-                // Очищаем ответ от повтора вопроса
-                const lastQuery = sessionStorage.getItem('lastQuery') || "";
-                const cleanText = resText.replace(lastQuery, "").trim();
-
-                chat.innerHTML += `<div class="ai-msg">${cleanText}</div>`;
-            } catch (e) {
-                chat.innerHTML += `<div style="color:orange">! Ошибка обработки: ${e.message}</div>`;
+        let result = data;
+        // Если Google прислал строку вместо объекта, превращаем её в объект
+        if (typeof data === 'string') {
+            try { 
+                result = JSON.parse(data); 
+            } catch(e) {
+                console.error("Ошибка парсинга:", e);
             }
-
-            btn.disabled = false;
-            btn.innerText = "ПУСК";
-            chat.scrollTop = chat.scrollHeight;
-            
-            // Удаляем временный скрипт
-            const oldScript = document.getElementById('api-temp');
-            if(oldScript) oldScript.remove();
-        };
-
-        function send() {
-            const inp = document.getElementById('inp');
-            const chat = document.getElementById('chat');
-            const btn = document.getElementById('btn');
-            const val = inp.value.trim();
-
-            if(!val) return;
-            
-            sessionStorage.setItem('lastQuery', val);
-            chat.innerHTML += `<div>> ${val}</div>`;
-            inp.value = "";
-            btn.disabled = true;
-            btn.innerText = "...";
-
-            // Создаем запрос через JSONP (обходим CORS)
-            const script = document.createElement('script');
-            script.id = 'api-temp';
-            script.src = `${googleUrl}?inputs=${encodeURIComponent(val)}&callback=handleResponse&ts=${Date.now()}`;
-            
-            script.onerror = function() {
-                chat.innerHTML += `<div style="color:red">! Ошибка шлюза. Проверьте VPN или ссылку.</div>`;
-                btn.disabled = false;
-                btn.innerText = "ПУСК";
-            };
-
-            document.body.appendChild(script);
         }
 
-        // Отправка по Enter
-        document.getElementById('inp').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') send();
-        });
-    </script>
-</body>
-</html>
+        // Извлекаем текст сообщения
+        let resText = Array.isArray(result) ? result[0].generated_text : (result.generated_text || "ИИ молчит...");
+        
+        // Убираем из ответа текст твоего вопроса (чтобы не дублировалось)
+        const lastQuery = sessionStorage.getItem('lastQuery') || "";
+        const cleanText = resText.replace(lastQuery, "").trim();
+
+        // Добавляем ответ в чат
+        chat.innerHTML += `<div class="ai-msg">${cleanText}</div>`;
+        
+        // Возвращаем кнопку в рабочее состояние
+        btn.disabled = false;
+        btn.innerText = "ПУСК";
+        chat.scrollTop = chat.scrollHeight;
+
+        // Удаляем временный скрипт запроса
+        const oldScript = document.getElementById('api-temp');
+        if(oldScript) oldScript.remove();
+    };
+
+    // 3. ФУНКЦИЯ ОТПРАВКИ
+    function send() {
+        const inp = document.getElementById('inp');
+        const chat = document.getElementById('chat');
+        const btn = document.getElementById('btn');
+        const val = inp.value.trim();
+
+        if(!val) return;
+        
+        // Сохраняем вопрос, чтобы потом его вырезать из ответа
+        sessionStorage.setItem('lastQuery', val);
+        
+        chat.innerHTML += `<div>> ${val}</div>`;
+        inp.value = "";
+        btn.disabled = true;
+        btn.innerText = "...";
+
+        // Создаем динамический запрос к Google
+        const script = document.createElement('script');
+        script.id = 'api-temp';
+        script.src = `${googleUrl}?inputs=${encodeURIComponent(val)}&callback=handleResponse&ts=${Date.now()}`;
+        
+        script.onerror = function() {
+            chat.innerHTML += `<div style="color:red">! Ошибка шлюза. Проверь настройки в Google (Anyone).</div>`;
+            btn.disabled = false;
+            btn.innerText = "ПУСК";
+        };
+
+        document.body.appendChild(script);
+    }
+
+    // Слушатель для клавиши Enter
+    document.getElementById('inp').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') send();
+    });
+</script>
