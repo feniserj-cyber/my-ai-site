@@ -2,23 +2,24 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>AI Cyber Terminal</title>
+    <title>AI Cyber Terminal | Success</title>
     <style>
         body { background: #050505; color: #00ff41; font-family: 'Courier New', monospace; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .box { width: 90%; max-width: 600px; height: 70vh; border: 2px solid #00ff41; background: #000; display: flex; flex-direction: column; padding: 15px; box-shadow: 0 0 20px #00ff41; border-radius: 10px; }
-        #chat { flex: 1; overflow-y: auto; padding: 10px; border-bottom: 1px solid #00ff41; margin-bottom: 10px; font-size: 14px; }
+        .box { width: 90%; max-width: 600px; height: 75vh; border: 2px solid #00ff41; background: #000; display: flex; flex-direction: column; padding: 15px; box-shadow: 0 0 20px #00ff41; border-radius: 10px; }
+        #chat { flex: 1; overflow-y: auto; padding: 10px; border-bottom: 1px solid #00ff41; margin-bottom: 10px; font-size: 14px; white-space: pre-wrap; }
         .in-row { display: flex; gap: 10px; }
         input { flex: 1; background: #000; border: 1px solid #00ff41; color: #00ff41; padding: 12px; outline: none; }
-        button { background: #00ff41; border: none; color: #000; font-weight: bold; padding: 10px 25px; cursor: pointer; transition: 0.3s; }
-        button:hover { background: #fff; box-shadow: 0 0 10px #fff; }
-        .ai-text { color: #fff; background: #111; padding: 8px; margin: 5px 0; border-radius: 4px; border-left: 3px solid #00ff41; }
+        button { background: #00ff41; border: none; color: #000; font-weight: bold; padding: 10px 25px; cursor: pointer; }
+        button:disabled { background: #333; color: #666; cursor: not-allowed; }
+        .ai-text { color: #fff; background: #111; padding: 10px; margin: 5px 0; border-radius: 4px; border-left: 3px solid #00ff41; }
+        .user-text { color: #888; margin-top: 10px; }
     </style>
 </head>
 <body>
 <div class="box">
-    <div id="chat">*** СИСТЕМА ПОДКЛЮЧЕНА ЧЕРЕЗ GOOGLE-ШЛЮЗ ***</div>
+    <div id="chat">*** КАНАЛ СВЯЗИ ЧЕРЕЗ GOOGLE УСТАНОВЛЕН. СИСТЕМА ГОТОВА. ***</div>
     <div class="in-row">
-        <input type="text" id="msg" placeholder="Введите ваш вопрос...">
+        <input type="text" id="msg" placeholder="Введите ваш вопрос..." autocomplete="off">
         <button id="go">ПУСК</button>
     </div>
 </div>
@@ -28,33 +29,48 @@
     const chat = document.getElementById('chat');
     const input = document.getElementById('msg');
 
-    // ТВОЯ ССЫЛКА УЖЕ ВСТАВЛЕНА НИЖЕ
-    const googleUrl = "https://script.google.com/macros/s/AKfycbya7l9cyxzdhLFA548rgMldQGNXEM645W95UR8A0p2eHEj5RB85enIaHUHsUFCzN02GFA/exec";
+    // Твоя проверенная ссылка
+    const googleUrl = "https://script.google.com/macros/s/AKfycbzTX2v9WXSknHYB4kyr-w9giHs7TCbO7rwp_TBOVUBVsutbk_FHjaZjg3XvnDVIh-zjDg/exec";
 
-    btn.onclick = async () => {
+    async function sendMessage() {
         const val = input.value.trim();
         if(!val) return;
         
-        chat.innerHTML += `<div style="color:#888">> ${val}</div>`;
+        chat.innerHTML += `<div class="user-text">> ${val}</div>`;
         input.value = "";
+        btn.disabled = true;
+        btn.innerText = "ЖДИТЕ...";
         chat.scrollTop = chat.scrollHeight;
 
         try {
             const response = await fetch(googleUrl, {
                 method: 'POST',
-                mode: 'no-cors', // Это важно для Google Script
                 body: JSON.stringify({ inputs: val })
             });
 
-            // Так как режим 'no-cors' не дает прочитать ответ напрямую, 
-            // мы выведем сообщение, что запрос ушел.
-            chat.innerHTML += `<div class="ai-text">Запрос отправлен в нейросеть через Google... Подождите 5-10 секунд.</div>`;
+            const data = await response.json();
             
-            // Если через 10 секунд ничего не произошло, значит Google еще обрабатывает запрос
+            let aiMsg = "";
+            if (Array.isArray(data)) {
+                aiMsg = data[0].generated_text || "Пустой ответ";
+            } else if (data.generated_text) {
+                aiMsg = data.generated_text;
+            } else {
+                aiMsg = "Ошибка формата данных: " + JSON.stringify(data);
+            }
+
+            chat.innerHTML += `<div class="ai-text">${aiMsg}</div>`;
         } catch (e) {
-            chat.innerHTML += `<div style="color:red">ОШИБКА: ${e.message}</div>`;
+            chat.innerHTML += `<div style="color:red">ОШИБКА: Не удалось получить ответ. Проверьте настройки доступа 'Anyone' в Google Script.</div>`;
         }
-    };
+        
+        btn.disabled = false;
+        btn.innerText = "ПУСК";
+        chat.scrollTop = chat.scrollHeight;
+    }
+
+    btn.onclick = sendMessage;
+    input.onkeydown = (e) => { if(e.key === 'Enter') sendMessage(); };
 </script>
 </body>
 </html>
