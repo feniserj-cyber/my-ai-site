@@ -1,22 +1,4 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>AI Final Terminal</title>
-    <style>
-        body { background: #000; color: #0f0; font-family: monospace; padding: 20px; }
-        #chat { border: 1px solid #0f0; height: 350px; overflow-y: auto; padding: 15px; background: #050505; margin-bottom: 10px; }
-        .ai { color: #fff; border-left: 2px solid #0f0; padding-left: 10px; margin: 10px 0; }
-    </style>
-</head>
-<body>
-    <div id="chat">*** ИНИЦИАЛИЗАЦИЯ ТЕРМИНАЛА... ***</div>
-    <input type="text" id="inp" style="width:70%; background:#000; color:#0f0; border:1px solid #0f0; padding:10px;">
-    <button id="btn" onclick="send()">ПУСК</button>
-
-<script>
-    // ВСТАВЬ СЮДА НОВУЮ ССЫЛКУ ИЗ ШАГА 1
-    const googleUrl = "https://script.google.com/macros/s/AKfycbzhu5ITRB7WZr8Y-9XLor2l9h9Ek8Zzfayr4oU-UR9bVHVE7W25-FGzM_jSDPWeP0gMkQ/exec";
+const googleUrl = "https://script.google.com/macros/s/AKfycbygPlOK2H0gFgLJewnCYKcDtwhClnmH5tJsauH1VrUl5qwCEBgCwlq41LULy0rGKBMzkg/exec";
 
     async function send() {
         const val = document.getElementById('inp').value.trim();
@@ -27,24 +9,22 @@
         document.getElementById('btn').disabled = true;
 
         try {
-            // Запрашиваем данные как текст, чтобы избежать ошибки "Not Found" JSON
             const response = await fetch(`${googleUrl}?inputs=${encodeURIComponent(val)}`);
             const rawText = await response.text();
             
             console.log("Raw Response:", rawText);
-            
-            let data = JSON.parse(rawText);
-            let resText = Array.isArray(data) ? data[0].generated_text : (data.generated_text || rawText);
-            
-            chat.innerHTML += `<div class="ai">${resText.replace(val, "").trim()}</div>`;
+
+            if (rawText.trim() === "Not Found") {
+                chat.innerHTML += `<div style="color:orange">Система: Google вернул 'Not Found'. Проверь, что в настройках Deploy выбрано 'Anyone'.</div>`;
+            } else {
+                let data = JSON.parse(rawText);
+                let resText = Array.isArray(data) ? data[0].generated_text : (data.generated_text || rawText);
+                chat.innerHTML += `<div class="ai">${resText.replace(val, "").trim()}</div>`;
+            }
         } catch (e) {
-            chat.innerHTML += `<div style="color:red">Ошибка. Попробуй еще раз (ИИ просыпается).</div>`;
-            console.error("Fetch Error:", e);
+            chat.innerHTML += `<div style="color:red">Ошибка парсинга. Ответ сервера: ${e.message}</div>`;
         }
 
         document.getElementById('btn').disabled = false;
         chat.scrollTop = chat.scrollHeight;
     }
-</script>
-</body>
-</html>
