@@ -1,72 +1,50 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html>
 <head>
     <meta charset="UTF-8">
-    <title>AI Cyber Terminal</title>
+    <title>AI Final Terminal</title>
     <style>
-        body { background: #000; color: #0f0; font-family: 'Courier New', monospace; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-        #chat { width: 100%; max-width: 600px; height: 400px; border: 1px solid #0f0; background: #050505; overflow-y: auto; padding: 15px; margin-bottom: 15px; box-shadow: 0 0 15px #0f0; }
-        .input-row { width: 100%; max-width: 630px; display: flex; gap: 10px; }
-        input { flex: 1; background: #000; border: 1px solid #0f0; color: #0f0; padding: 12px; outline: none; font-family: monospace; }
-        button { background: #0f0; border: none; color: #000; padding: 10px 25px; font-weight: bold; cursor: pointer; }
-        button:disabled { background: #050; color: #0a0; }
-        .ai-msg { color: #fff; border-left: 3px solid #0f0; padding: 10px; margin: 10px 0; background: #111; }
-        .user-msg { color: #888; margin-top: 10px; }
+        body { background: #000; color: #0f0; font-family: monospace; padding: 20px; }
+        #chat { border: 1px solid #0f0; height: 350px; overflow-y: auto; padding: 15px; background: #050505; margin-bottom: 10px; }
+        .ai { color: #fff; border-left: 2px solid #0f0; padding-left: 10px; margin: 10px 0; }
     </style>
 </head>
 <body>
-    <div id="chat">*** СИСТЕМА ОНЛАЙН. ЖДУ ВВОДА... ***</div>
-    <div class="input-row">
-        <input type="text" id="userInput" placeholder="Введите сообщение..." autocomplete="off">
-        <button id="sendBtn" onclick="send()">ПУСК</button>
-    </div>
+    <div id="chat">*** ИНИЦИАЛИЗАЦИЯ ТЕРМИНАЛА... ***</div>
+    <input type="text" id="inp" style="width:70%; background:#000; color:#0f0; border:1px solid #0f0; padding:10px;">
+    <button id="btn" onclick="send()">ПУСК</button>
 
 <script>
-    const chat = document.getElementById('chat');
-    const inp = document.getElementById('userInput');
-    const btn = document.getElementById('sendBtn');
-
-    // ТВОЯ РАБОЧАЯ ССЫЛКА
+    // ВСТАВЬ СЮДА НОВУЮ ССЫЛКУ ИЗ ШАГА 1
     const googleUrl = "https://script.google.com/macros/s/AKfycbzhu5ITRB7WZr8Y-9XLor2l9h9Ek8Zzfayr4oU-UR9bVHVE7W25-FGzM_jSDPWeP0gMkQ/exec";
 
     async function send() {
-        const val = inp.value.trim();
+        const val = document.getElementById('inp').value.trim();
         if(!val) return;
-
-        chat.innerHTML += `<div class="user-msg">> ${val}</div>`;
-        inp.value = "";
-        btn.disabled = true;
-        btn.innerText = "СВЯЗЬ...";
+        
+        const chat = document.getElementById('chat');
+        chat.innerHTML += `<div>> ${val}</div>`;
+        document.getElementById('btn').disabled = true;
 
         try {
-            // Используем обычный fetch к Google шлюзу
+            // Запрашиваем данные как текст, чтобы избежать ошибки "Not Found" JSON
             const response = await fetch(`${googleUrl}?inputs=${encodeURIComponent(val)}`);
-            const data = await response.json();
+            const rawText = await response.text();
             
-            let result = "";
-            if (Array.isArray(data)) {
-                result = data[0].generated_text;
-            } else if (data.generated_text) {
-                result = data.generated_text;
-            } else {
-                result = JSON.stringify(data);
-            }
-
-            // Убираем эхо вопроса из ответа
-            const cleanResult = result.replace(val, "").trim();
-            chat.innerHTML += `<div class="ai-msg">${cleanResult || "ИИ промолчал, попробуйте еще раз."}</div>`;
+            console.log("Raw Response:", rawText);
             
+            let data = JSON.parse(rawText);
+            let resText = Array.isArray(data) ? data[0].generated_text : (data.generated_text || rawText);
+            
+            chat.innerHTML += `<div class="ai">${resText.replace(val, "").trim()}</div>`;
         } catch (e) {
-            console.error(e);
-            chat.innerHTML += `<div style="color:red">ОШИБКА: Не удалось получить JSON. Проверьте консоль (F12).</div>`;
+            chat.innerHTML += `<div style="color:red">Ошибка. Попробуй еще раз (ИИ просыпается).</div>`;
+            console.error("Fetch Error:", e);
         }
 
-        btn.disabled = false;
-        btn.innerText = "ПУСК";
+        document.getElementById('btn').disabled = false;
         chat.scrollTop = chat.scrollHeight;
     }
-
-    inp.onkeydown = (e) => { if(e.key === 'Enter') send(); };
 </script>
 </body>
 </html>
