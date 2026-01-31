@@ -2,79 +2,74 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Cyber Mind | Final</title>
+    <title>AI Cyber Terminal</title>
     <style>
-        body { background: #050505; color: #00ff41; font-family: 'Courier New', monospace; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .terminal { width: 95%; max-width: 650px; height: 80vh; border: 2px solid #00ff41; background: #000; display: flex; flex-direction: column; padding: 15px; box-shadow: 0 0 20px rgba(0, 255, 65, 0.3); border-radius: 8px; }
-        #chat { flex: 1; overflow-y: auto; padding: 10px; border-bottom: 1px solid #00ff41; margin-bottom: 15px; font-size: 14px; white-space: pre-wrap; }
-        .input-area { display: flex; gap: 10px; }
-        input { flex: 1; background: #000; border: 1px solid #00ff41; color: #00ff41; padding: 12px; outline: none; }
-        button { background: #00ff41; border: none; color: #000; font-weight: bold; padding: 10px 25px; cursor: pointer; }
-        button:disabled { background: #222; color: #666; }
-        .ai-msg { color: #fff; background: rgba(0, 255, 65, 0.1); padding: 12px; margin: 10px 0; border-radius: 4px; border-left: 4px solid #00ff41; }
-        .user-msg { color: #888; margin-top: 10px; }
+        body { background: #000; color: #0f0; font-family: 'Courier New', monospace; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .terminal { width: 90%; max-width: 600px; height: 80vh; border: 1px solid #0f0; display: flex; flex-direction: column; padding: 20px; box-shadow: 0 0 15px #0f0; }
+        #output { flex: 1; overflow-y: auto; margin-bottom: 20px; white-space: pre-wrap; font-size: 14px; }
+        .input-line { display: flex; gap: 10px; }
+        input { flex: 1; background: #000; border: 1px solid #0f0; color: #0f0; padding: 10px; outline: none; }
+        button { background: #0f0; border: none; color: #000; padding: 10px 20px; cursor: pointer; font-weight: bold; }
+        button:disabled { background: #050; color: #0a0; }
+        .ai-reply { color: #fff; background: #111; padding: 10px; margin: 5px 0; border-radius: 4px; }
     </style>
 </head>
 <body>
-
-<div class="terminal">
-    <div id="chat">*** СИСТЕМА ГОТОВА. ВВЕДИТЕ ЗАПРОС ***</div>
-    <div class="input-area">
-        <input type="text" id="userInput" placeholder="Напиши что-нибудь..." autocomplete="off">
-        <button id="sendBtn">ПУСК</button>
+    <div class="terminal">
+        <div id="output">*** СИСТЕМА ГОТОВА. ШЛЮЗ GOOGLE ОБНАРУЖЕН. ***</div>
+        <div class="input-line">
+            <input type="text" id="userInput" placeholder="Введите сообщение..." autocomplete="off">
+            <button id="sendBtn">ПУСК</button>
+        </div>
     </div>
-</div>
 
-<script>
-    const chat = document.getElementById('chat');
-    const input = document.getElementById('userInput');
-    const btn = document.getElementById('sendBtn');
+    <script>
+        const output = document.getElementById('output');
+        const input = document.getElementById('userInput');
+        const btn = document.getElementById('sendBtn');
 
-    // Твоя ссылка на Google шлюз
-    const googleUrl = "https://script.google.com/macros/s/AKfycbwnjPwBRTOCX-sZ08RWkcD_bePsJ07k5yWxZwss6XjO2aOx0Kl_b9eqQNnIF8H0eIIQPA/exec";
+        // Твоя ссылка уже здесь
+        const gateUrl = "https://script.google.com/macros/s/AKfycbzPnpS73g2NATQM5WhYb2K34Rbb3wd1_2yOSEPH8vO-PVlrBa6DcD-jvKgN2oJe6kZukA/exec";
 
-    async function sendToAI() {
-        const text = input.value.trim();
-        if (!text) return;
+        async function talk() {
+            const text = input.value.trim();
+            if (!text) return;
 
-        chat.innerHTML += `<div class="user-msg">> ${text}</div>`;
-        input.value = "";
-        btn.disabled = true;
-        btn.innerText = "СВЯЗЬ...";
-        chat.scrollTop = chat.scrollHeight;
+            output.innerHTML += `<div>> ${text}</div>`;
+            input.value = "";
+            btn.disabled = true;
+            btn.innerText = "СВЯЗЬ...";
 
-        try {
-            // Используем текстовый режим для обхода CORS проблем
-            const response = await fetch(googleUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify({ inputs: text })
-            });
+            try {
+                // Используем Content-Type: text/plain, чтобы обойти CORS блокировку браузера
+                const response = await fetch(gateUrl, {
+                    method: 'POST',
+                    mode: 'cors',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify({ inputs: text })
+                });
 
-            const data = await response.json();
-            
-            if (data.error) {
-                chat.innerHTML += `<div style="color:yellow">ИИ просыпается... Подожди 10 секунд и нажми ПУСК еще раз.</div>`;
-            } else {
-                let reply = Array.isArray(data) ? data[0].generated_text : data.generated_text;
-                // Убираем эхо вопроса из ответа
-                const cleanReply = reply.split('[/INST]').pop() || reply;
-                chat.innerHTML += `<div class="ai-msg">${cleanReply.trim()}</div>`;
+                const data = await response.json();
+                
+                if (data.error) {
+                    output.innerHTML += `<div style="color:yellow">ИИ еще грузится. Попробуйте снова через 15 секунд.</div>`;
+                } else {
+                    let answer = Array.isArray(data) ? data[0].generated_text : data.generated_text;
+                    // Убираем повтор вопроса из ответа
+                    const cleanAnswer = answer.replace(text, "").trim();
+                    output.innerHTML += `<div class="ai-reply">${cleanAnswer || "Хм, ИИ прислал пустой ответ..."}</div>`;
+                }
+            } catch (e) {
+                output.innerHTML += `<div style="color:red">СЕРВЕРНАЯ ОШИБКА: Скорее всего, ваш браузер блокирует внешние запросы. Попробуйте открыть сайт в режиме Инкогнито или через другой браузер.</div>`;
             }
-        } catch (error) {
-            chat.innerHTML += `<div style="color:red">СБОЙ: Проверь, что в Google Script выбран доступ 'Anyone'.</div>`;
-            console.error(error);
+
+            btn.disabled = false;
+            btn.innerText = "ПУСК";
+            output.scrollTop = output.scrollHeight;
         }
 
-        btn.disabled = false;
-        btn.innerText = "ПУСК";
-        chat.scrollTop = chat.scrollHeight;
-    }
-
-    btn.onclick = sendToAI;
-    input.onkeydown = (e) => { if (e.key === 'Enter') sendToAI(); };
-</script>
-
+        btn.onclick = talk;
+        input.onkeydown = (e) => { if (e.key === 'Enter') talk(); };
+    </script>
 </body>
 </html>
