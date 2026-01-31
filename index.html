@@ -5,47 +5,41 @@
     <title>AI Cyber Terminal</title>
     <style>
         body { background: #000; color: #0f0; font-family: monospace; padding: 20px; }
-        #chat { border: 1px solid #0f0; height: 400px; overflow-y: auto; padding: 15px; background: #050505; margin-bottom: 10px; }
-        .ai-msg { color: #fff; border-left: 3px solid #0f0; padding: 10px; margin: 10px 0; background: #111; }
+        #chat { border: 1px solid #0f0; height: 350px; overflow-y: auto; padding: 15px; background: #050505; margin-bottom: 10px; }
+        .ai { color: #fff; border-left: 2px solid #0f0; padding-left: 10px; margin: 10px 0; }
     </style>
 </head>
 <body>
-    <div id="chat">*** СИСТЕМА ГОТОВА ***</div>
+    <div id="chat">*** ИНИЦИАЛИЗАЦИЯ... ***</div>
     <input type="text" id="inp" style="width:70%; background:#000; color:#0f0; border:1px solid #0f0; padding:10px;">
-    <button id="btn" onclick="send()" style="padding:10px; background:#0f0; cursor:pointer;">ПУСК</button>
+    <button id="btn" onclick="send()">ПУСК</button>
 
 <script>
-    // ВСТАВЬ СЮДА СВОЮ НОВУЮ ССЫЛКУ ИЗ ШАГА 1
-    const googleUrl = "https://script.google.com/macros/s/AKfycbwUuomEnRi7LLzNJUuUIDcrgsJjAPPlPEG4-yeJHX7xww6lHNOFJ6HdKsmNbRiL2_tk/exec";
+    // ТВОЯ ССЫЛКА ИЗ ШАГА 1
+    const googleUrl = "https://script.google.com/macros/s/AKfycbzhu5ITRB7WZr8Y-9XLor2l9h9Ek8Zzfayr4oU-UR9bVHVE7W25-FGzM_jSDPWeP0gMkQ/exec";
 
-    window.handleResponse = function(base64Data) {
-        try {
-            // Расшифровываем данные обратно в текст
-            const decodedData = decodeURIComponent(escape(window.atob(base64Data)));
-            const data = JSON.parse(decodedData);
-            
-            let result = Array.isArray(data) ? data[0].generated_text : data.generated_text;
-            const lastQuery = sessionStorage.getItem('lastQuery') || "";
-            
-            document.getElementById('chat').innerHTML += `<div class="ai-msg">${result.replace(lastQuery, "").trim()}</div>`;
-        } catch (e) {
-            console.error("Ошибка декодирования:", e);
-        }
-        document.getElementById('btn').disabled = false;
-        document.getElementById('chat').scrollTop = document.getElementById('chat').scrollHeight;
-    };
-
-    function send() {
+    async function send() {
         const val = document.getElementById('inp').value.trim();
         if(!val) return;
-        sessionStorage.setItem('lastQuery', val);
-        document.getElementById('chat').innerHTML += `<div>> ${val}</div>`;
+        
+        const chat = document.getElementById('chat');
+        chat.innerHTML += `<div>> ${val}</div>`;
         document.getElementById('btn').disabled = true;
 
-        const script = document.createElement('script');
-        script.src = `${googleUrl}?inputs=${encodeURIComponent(val)}&callback=handleResponse&_=${Date.now()}`;
-        document.body.appendChild(script);
-        script.onload = () => script.remove();
+        try {
+            // Отправляем через GET, чтобы избежать CORS-препроверки (Preflight)
+            const response = await fetch(`${googleUrl}?inputs=${encodeURIComponent(val)}`);
+            const data = await response.json();
+            
+            let resText = Array.isArray(data) ? data[0].generated_text : (data.generated_text || "Ошибка");
+            chat.innerHTML += `<div class="ai">${resText.replace(val, "").trim()}</div>`;
+        } catch (e) {
+            chat.innerHTML += `<div style="color:red">Ошибка связи. Попробуй еще раз через 5 сек.</div>`;
+            console.error(e);
+        }
+
+        document.getElementById('btn').disabled = false;
+        chat.scrollTop = chat.scrollHeight;
     }
 </script>
 </body>
