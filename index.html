@@ -1,66 +1,84 @@
-<script>
-    // Твоя ссылка (проверь, чтобы она была в кавычках)
-    const googleUrl = "https://script.google.com/macros/s/AKfycbygPlOK2H0gFgLJewnCYKcDtwhClnmH5tJsauH1VrUl5qwCEBgCwlq41LULy0rGKBMzkg/exec";
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>AI Cyber Terminal</title>
+    <style>
+        body { background: #000; color: #0f0; font-family: 'Courier New', monospace; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        #chat { width: 100%; max-width: 600px; height: 400px; border: 1px solid #0f0; background: #050505; overflow-y: auto; padding: 15px; margin-bottom: 15px; box-shadow: 0 0 15px #0f0; }
+        .input-row { width: 100%; max-width: 630px; display: flex; gap: 10px; }
+        input { flex: 1; background: #000; border: 1px solid #0f0; color: #0f0; padding: 12px; outline: none; }
+        button { background: #0f0; border: none; color: #000; padding: 10px 25px; font-weight: bold; cursor: pointer; }
+        button:disabled { background: #050; color: #0a0; }
+        .ai { color: #fff; border-left: 3px solid #0f0; padding-left: 10px; margin: 10px 0; background: #111; padding: 5px; }
+        .error { color: red; font-size: 12px; }
+    </style>
+</head>
+<body>
 
-    // 1. ЛОВУШКА ДЛЯ ОТВЕТА (вызывается самим Google)
-    window.handleResponse = function(data) {
-        console.log("Данные получены:", data);
-        const chat = document.getElementById('chat');
-        const btn = document.getElementById('btn');
-        
-        try {
-            let resText = Array.isArray(data) ? data[0].generated_text : (data.generated_text || "Пустой ответ");
-            const lastQuery = sessionStorage.getItem('lastQuery') || "";
+    <div id="chat">*** СИСТЕМА ЗАГРУЖЕНА. ЖДУ КОМАНДЫ... ***</div>
+    
+    <div class="input-row">
+        <input type="text" id="inp" placeholder="Введите сообщение..." autocomplete="off">
+        <button id="btn" onclick="send()">ПУСК</button>
+    </div>
+
+    <script>
+        const googleUrl = "https://script.google.com/macros/s/AKfycbygPlOK2H0gFgLJewnCYKcDtwhClnmH5tJsauH1VrUl5qwCEBgCwlq41LULy0rGKBMzkg/exec";
+
+        // ЛОВУШКА ДЛЯ ОТВЕТА
+        window.handleResponse = function(data) {
+            const chat = document.getElementById('chat');
+            const btn = document.getElementById('btn');
             
-            chat.innerHTML += `<div class="ai">${resText.replace(lastQuery, "").trim()}</div>`;
-        } catch (e) {
-            chat.innerHTML += `<div style="color:orange">! Ошибка обработки данных: ${e.message}</div>`;
-        }
+            try {
+                let resText = Array.isArray(data) ? data[0].generated_text : (data.generated_text || "Пусто");
+                const lastQuery = sessionStorage.getItem('lastQuery') || "";
+                chat.innerHTML += `<div class="ai">${resText.replace(lastQuery, "").trim()}</div>`;
+            } catch (e) {
+                chat.innerHTML += `<div class="error">! Ошибка данных: ${e.message}</div>`;
+            }
 
-        btn.disabled = false;
-        btn.innerText = "ПУСК";
-        chat.scrollTop = chat.scrollHeight;
-        
-        // Удаляем "отработавший" скрипт
-        const oldScript = document.getElementById('api-call');
-        if(oldScript) oldScript.remove();
-    };
-
-    async function send() {
-        const inp = document.getElementById('inp');
-        const chat = document.getElementById('chat');
-        const btn = document.getElementById('btn');
-        const val = inp.value.trim();
-
-        if(!val) return;
-        
-        sessionStorage.setItem('lastQuery', val);
-        chat.innerHTML += `<div>> ${val}</div>`;
-        btn.disabled = true;
-        btn.innerText = "СВЯЗЬ...";
-
-        // 2. ЛОВУШКА ДЛЯ ЗАПРОСА (JSONP)
-        const script = document.createElement('script');
-        script.id = 'api-call';
-        // Добавляем callback и метку времени, чтобы Google не присылал старый ответ
-        script.src = `${googleUrl}?inputs=${encodeURIComponent(val)}&callback=handleResponse&_ts=${Date.now()}`;
-        
-        // Если скрипт вообще не смог загрузиться (ошибка 404 или блокировка)
-        script.onerror = function() {
-            chat.innerHTML += `<div style="color:red">!!! КРИТИЧЕСКАЯ ОШИБКА: Google-шлюз недоступен. Проверьте настройки Deploy (Anyone).</div>`;
             btn.disabled = false;
             btn.innerText = "ПУСК";
+            chat.scrollTop = chat.scrollHeight;
+            
+            const oldScript = document.getElementById('api-call');
+            if(oldScript) oldScript.remove();
         };
 
-        document.body.appendChild(script);
-        
-        // Таймер ожидания (если Google молчит дольше 15 секунд)
-        setTimeout(() => {
-            if (btn.disabled) {
-                chat.innerHTML += `<div style="color:yellow">? Ожидание затянулось. Попробуйте еще раз через минуту.</div>`;
+        function send() {
+            const inp = document.getElementById('inp');
+            const chat = document.getElementById('chat');
+            const btn = document.getElementById('btn');
+            const val = inp.value.trim();
+
+            if(!val) return;
+            
+            sessionStorage.setItem('lastQuery', val);
+            chat.innerHTML += `<div>> ${val}</div>`;
+            inp.value = "";
+            btn.disabled = true;
+            btn.innerText = "...";
+
+            // ЛОВУШКА ДЛЯ ЗАПРОСА
+            const script = document.createElement('script');
+            script.id = 'api-call';
+            script.src = googleUrl + "?inputs=" + encodeURIComponent(val) + "&callback=handleResponse&ts=" + Date.now();
+            
+            script.onerror = function() {
+                chat.innerHTML += `<div class="error">!!! ОШИБКА ШЛЮЗА: Проверьте настройки Deploy (Anyone).</div>`;
                 btn.disabled = false;
                 btn.innerText = "ПУСК";
-            }
-        }, 15000);
-    }
-</script>
+            };
+
+            document.body.appendChild(script);
+        }
+
+        // Отправка по нажатию Enter
+        document.getElementById('inp').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') send();
+        });
+    </script>
+</body>
+</html>
